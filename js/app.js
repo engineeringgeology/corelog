@@ -89,6 +89,7 @@
     ov.addEventListener('click', async e => {
       const a = e.target.closest('[data-a]'); if (!a) return; // tapping outside never discards what was typed
       if (a.dataset.a === 'x') close();
+      if ((a.dataset.a === 'ok' || a.dataset.a === 'next') && demoTooDeep(DEPTH_KEYS.map(k => work[k]))) { toast(DEEP_MSG, 4000); return; }
       if (a.dataset.a === 'ok') { const err = await onSave(work); if (err) { toast(err); return; } close(); }
       if (a.dataset.a === 'next') { const err = await onSave(work); if (err) { toast(err); return; } await close(); onNext(); }
       if (a.dataset.a === 'del' && ask('Delete this entry?')) { onDelete(); close(); }
@@ -119,7 +120,7 @@
     const badge = lic.licensed ? `<span class="badge ok">${T('Licensed')}</span>` : `<span class="badge demo">${T('Demo')}</span>`;
     app().innerHTML = topbar(`<div class="logo">${logoSVG()}</div>`, 'CoreLog Field', `<button class="ghost" onclick="location.hash='#/settings'" aria-label="${T('Settings')}">${ico('gear')}</button>`, `Engineering Geology · ${badge}`) +
       `<main class="home">
-        ${!lic.licensed ? `<div class="note">${T(`Demo mode: up to ${CL.License.DEMO_LIMIT} boreholes, PDF has a watermark.`)} <a href="#/settings">${T('Activate licence')}</a></div>` : ''}
+        ${!lic.licensed ? `<div class="note">${T('Demo mode: 1 borehole down to 10 m, PDF has a watermark.')} <a href="#/settings">${T('Activate licence')}</a></div>` : ''}
         ${S.list.length ? S.list.map(b => {
           const d = M.maxDepth(b); const needBk = (b.changesSinceBackup || 0) > 0 && (!b.lastBackup || Date.now() - b.lastBackup > 864e5);
           return `<a class="card bh" href="#/bh/${b.id}/log">
@@ -132,16 +133,32 @@
       </main>`;
     $$('canvas[data-col]').forEach(c => miniCol(c, S.list.find(b => b.id === c.dataset.col)));
     $('#newBh').onclick = newBh;
-    $('#restore').onchange = async e => { const f = e.target.files[0]; if (!f) return; try { const bh = await CL.Export.restore(f); if (bh) { toast(`Restored ${bh.bhId}`); renderHome(); } } catch (err) { toast(err.message); } };
+    $('#restore').onchange = async e => { const f = e.target.files[0]; if (!f) return; e.target.value = ''; if (await demoBlocked()) return; try { const bh = await CL.Export.restore(f); if (bh) { await demoCount(); toast(`Restored ${bh.bhId}`); renderHome(); } } catch (err) { toast(err.message); } };
   }
 
+  // demo: count every borehole ever created or restored, so deleting one does not free a slot
+  async function demoUsed() { return Math.max(+(await DB.meta('demoCreated')) || 0, S.list.length); }
+  async function demoBlocked() {
+    if (CL.License.state.licensed) return false;
+    if (await demoUsed() < CL.License.DEMO_LIMIT) return false;
+    toast('The demo allows 1 borehole. Activate your licence in Settings.', 4000); return true;
+  }
+  // demo: no depth beyond 10 m (32.8 ft)
+  const DEPTH_KEYS = ['from', 'to', 'depth', 'top', 'bottom', 'tip', 'screenTop', 'screenBottom', 'sealTop', 'sealBottom', 'finalDepth'];
+  function demoTooDeep(vals) {
+    if (CL.License.state.licensed) return false;
+    const lim = CL.License.DEMO_DEPTH_M * (S.bh && S.bh.units === 'ft' ? 3.2808 : 1) + 1e-6;
+    return vals.some(v => v != null && v !== '' && +v > lim);
+  }
+  const DEEP_MSG = 'The demo is limited to 10 m depth. Activate your licence to log deeper.';
+  async function demoCount() { if (!CL.License.state.licensed) await DB.meta('demoCreated', (await demoUsed()) + 1); }
+
   async function newBh() {
-    const lic = CL.License.state;
-    if (!lic.licensed && S.list.length >= CL.License.DEMO_LIMIT) { toast(`Demo allows ${CL.License.DEMO_LIMIT} boreholes. Activate your licence in Settings.`, 4000); return; }
+    if (await demoBlocked()) return;
     const st = S.settings; const last = S.list[0];
     const next = last && last.bhId ? last.bhId.replace(/(\d+)(?!.*\d)/, m => String(+m + 1).padStart(m.length, '0')) : 'BH-01';
     const bh = M.newBorehole({ ...st, project: last ? last.project : '', projectNo: last ? last.projectNo : '', client: last ? last.client : '', bhId: next, driller: last ? last.driller : '', rig: last ? last.rig : '', method: last ? last.method : st.method, diameter: last ? last.diameter : '', contractor: last ? last.contractor : '' });
-    await DB.put('boreholes', bh); S.bh = bh; location.hash = `#/bh/${bh.id}/info`;
+    await demoCount(); await DB.put('boreholes', bh); S.bh = bh; location.hash = `#/bh/${bh.id}/info`;
   }
 
   const TABS = [['info', 'Info', 'info'], ['log', 'Log', 'layers'], ['runs', 'Core', 'core'], ['disc', 'Joints', 'joint'], ['samples', 'Samples', 'flask'], ['photos', 'Photos', 'cam'], ['export', 'Export', 'share']];
@@ -474,9 +491,10 @@
     const si = () => { const n = Math.max(1, Math.ceil(M.maxDepth(bh) / +$('#perSheet').value - 1e-9)); $('#sheetsInfo').textContent = T(`${M.f2(M.maxDepth(bh))} ${ud()} → ${n} log sheet${n > 1 ? 's' : ''} + data tables`); };
     if ($('#biEn')) $('#biEn').onchange = () => { bh.pdfBilingual = $('#biEn').checked; saveBh(); };
     $('#perSheet').onchange = () => { bh.pdfPerSheet = +$('#perSheet').value; saveBh(); si(); }; si();
-    $('#pdfOpen').onclick = () => pdf(false); $('#pdfShare').onclick = () => pdf(true);
-    $('#xls').onclick = () => CL.Export.save(CL.Export.xlsxBlob([bh]), `${CL.Export.safe(bh.bhId)}.xlsx`, true);
-    $('#csv').onclick = () => CL.Export.save(CL.Export.csvBlob(bh), `${CL.Export.safe(bh.bhId)}.csv`, true);
+    const deep = () => { if (demoTooDeep([M.maxDepth(bh)])) { toast(DEEP_MSG, 4000); return true; } return false; };
+    $('#pdfOpen').onclick = () => deep() || pdf(false); $('#pdfShare').onclick = () => deep() || pdf(true);
+    $('#xls').onclick = () => deep() || CL.Export.save(CL.Export.xlsxBlob([bh]), `${CL.Export.safe(bh.bhId)}.xlsx`, true);
+    $('#csv').onclick = () => deep() || CL.Export.save(CL.Export.csvBlob(bh), `${CL.Export.safe(bh.bhId)}.csv`, true);
     $('#bk').onclick = async () => {
       const blob = await CL.Export.backupBlob(bh); const d = new Date().toISOString().slice(0, 10);
       const r = await CL.Export.save(blob, `${CL.Export.safe(bh.bhId)}_backup_${d}.corelog.json`, true);
@@ -508,7 +526,7 @@
     if ($('#act')) $('#act').onclick = async () => { const b = $('#act'); b.disabled = true; b.textContent = T('Checking…'); try { await CL.License.activate($('#lk').value, $('#ln').value); toast('Licence activated. Thank you!'); renderSettings(); } catch (e) { toast(e.message, 5000); b.disabled = false; b.textContent = T('Activate'); } };
     if ($('#deact')) $('#deact').onclick = async () => { if (ask('Remove the licence from this device? You can activate it again later.')) { await CL.License.deactivate(); renderSettings(); } };
     $('#persist').onclick = async () => { const ok = navigator.storage && navigator.storage.persist && await navigator.storage.persist(); toast(ok ? 'Protected storage ON' : 'The browser refused. Install the app to the home screen first.', 4000); renderSettings(); };
-    $('#xlsAll').onclick = async () => { const all = await DB.all('boreholes'); if (!all.length) return toast('No boreholes'); CL.Export.save(CL.Export.xlsxBlob(all), `CoreLog_all_${M.today()}.xlsx`, true); };
+    $('#xlsAll').onclick = async () => { const all = await DB.all('boreholes'); if (!CL.License.state.licensed && all.some(b => M.maxDepth(b) / (b.units === 'ft' ? 3.2808 : 1) > CL.License.DEMO_DEPTH_M + 1e-6)) return toast(DEEP_MSG, 4000); if (!all.length) return toast('No boreholes'); CL.Export.save(CL.Export.xlsxBlob(all), `CoreLog_all_${M.today()}.xlsx`, true); };
   }
 
   // ---------- canvas helpers ----------
@@ -542,7 +560,7 @@
   }
 
   // ---------- boot ----------
-  CL.VERSION = '1.1.4';
+  CL.VERSION = '1.1.5';
   async function boot() {
     try {
       S.settings = (await DB.meta('settings')) || { standard: 'BS', units: 'm', method: D.methods[0], geologist: '' };
