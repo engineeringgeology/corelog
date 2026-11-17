@@ -7,7 +7,7 @@ window.CL = window.CL || {};
   // Filled in when the licence server is deployed (see server/README.md)
   const LICENSE_API = 'https://corelog-license.geologyfans.workers.dev';
   const PUBLIC_JWK = { kty: 'EC', crv: 'P-256', x: 'U30rOp6dBy40NovXfSu0JbC4OKHH1VdhvdOHSf3SlWs', y: 'UukT2dyJGsJWK-EM6Oigx-czC3mJbB7jUwJFPPBohss' };
-  const DEMO_LIMIT = 2;
+  const DEMO_LIMIT = 1, DEMO_DEPTH_M = 10;
 
   const b64u = { dec: s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), c => c.charCodeAt(0)) };
 
@@ -66,5 +66,5 @@ window.CL = window.CL || {};
     state = { licensed: false, demo: true, name: '', email: '', key: '' };
   }
 
-  CL.License = { load, activate, deactivate, get state() { return state; }, DEMO_LIMIT, get online() { return !!LICENSE_API; } };
+  CL.License = { load, activate, deactivate, get state() { return state; }, DEMO_LIMIT, DEMO_DEPTH_M, get online() { return !!LICENSE_API; } };
 })();
