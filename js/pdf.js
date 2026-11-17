@@ -13,8 +13,8 @@ window.CL = window.CL || {};
     const u = M.U(bh);
     const std = bh.standard;
     const W = 210, ML = 10, MR = 200;
-    const Y0 = 56, Y1 = 254;                    // body top/bottom
-    const mm = u.d === 'ft' ? 5 : 20;           // mm per depth unit (1:50 metric, ~1:61 for feet)
+    const Y0 = 55, Y1 = 255;                    // body top/bottom
+    const mm = u.d === 'ft' ? 5 : 20;           // mm per depth unit: 1:50 metric = 10 m per sheet; feet = 40 ft per sheet
     const perPage = (Y1 - Y0) / mm;
     const depth = Math.max(M.maxDepth(bh), 1);
     const pages = Math.max(1, Math.ceil(depth / perPage - 1e-9));
@@ -27,7 +27,7 @@ window.CL = window.CL || {};
 
     // columns
     const cols = [
-      ['depth', `Depth\n(${u.d})`, 11], ['elev', `Level\n(${u.d})`, 11], ['leg', 'Legend', 14], ['desc', 'Description of strata', 72],
+      ['depth', `Depth\n(${u.d})`, 11], ['elev', `Elev.\n(${u.d})`, 11], ['leg', 'Legend', 14], ['desc', 'Description of strata', 72],
       ['wat', 'Water', 7], ['smp', 'Samples', 20], ['spt', 'Tests\nSPT N', 14], ['tcr', 'TCR\n%', 10], ['scr', 'SCR\n%', 10], ['rqd', 'RQD\n%', 10], ['fi', `FI\n${u.d === 'ft' ? '/ft' : '/m'}`, 11]
     ];
     let x = ML; const C = {};
@@ -182,7 +182,7 @@ window.CL = window.CL || {};
   }
 
   function footer(doc, bh, used, opts, last) {
-    const y = 256; doc.setDrawColor(40); doc.setLineWidth(0.25); doc.rect(10, y, 190, 31);
+    const y = 257; doc.setDrawColor(40); doc.setLineWidth(0.25); doc.rect(10, y, 190, 30);
     doc.setFontSize(6.5); doc.setFont('helvetica', 'bold'); doc.text('LEGEND', 12, y + 3.5); doc.setFont('helvetica', 'normal');
     const sw = 7, sh = 4.5; let lx = 12, ly = y + 5.5;
     used.slice(0, 15).forEach(k => {
