@@ -13,8 +13,9 @@ window.CL = window.CL || {};
       ['Date started', bh.dateStart], ['Date completed', bh.dateEnd], ['Method', bh.method], ['Diameter', bh.diameter], ['Inclination (deg)', bh.inclination],
       ['Rig', bh.rig], ['Contractor', bh.contractor], ['Driller', bh.driller], ['Logged by', bh.geologist], ['Standard', D.standards[std]],
       [`Final depth (${u.d})`, M.maxDepth(bh)], [`Water first struck (${u.d})`, M.num(bh.gwFirst)], [`Water standing (${u.d})`, M.num(bh.gwStanding)], ['Units', u.d], ['Remarks', bh.remarks]];
-    const strata = [[`From (${u.d})`, `To (${u.d})`, `Thickness (${u.d})`, 'Type', 'Legend', 'USCS', 'Principal / rock', 'Description']]
-      .concat(M.sortBy(bh.intervals, 'from').map(i => [M.num(i.from), M.num(i.to), (M.num(i.to) - M.num(i.from)) || null, i.kind, M.patternOf(i, std), i.uscs || '', i.kind === 'rock' ? i.rockName : i.principal, M.describe(i, std)]));
+    const en = CL.I18N.lang === 'en';
+    const strata = [[`From (${u.d})`, `To (${u.d})`, `Thickness (${u.d})`, 'Type', 'Legend', 'USCS', 'Principal / rock', en ? 'Description' : CL.I18N.T('Description')].concat(en ? [] : ['Description (English)'])]
+      .concat(M.sortBy(bh.intervals, 'from').map(i => [M.num(i.from), M.num(i.to), (M.num(i.to) - M.num(i.from)) || null, i.kind, M.patternOf(i, std), i.uscs || '', i.kind === 'rock' ? i.rockName : i.principal, M.describe(i, std)].concat(en ? [] : [M.describe(i, std, 'en')])));
     const runs = [[`From (${u.d})`, `To (${u.d})`, `Run (${u.d})`, `Recovered (${u.d})`, 'TCR %', 'SCR %', 'RQD %', `FI (${u.fi})`, `Pieces (${u.piece})`, 'Fractures']]
       .concat(M.sortBy(bh.runs, 'from').map(r => { const k = M.runCalc(r, bh); const rd = v => v === null ? null : Math.round(v * 10) / 10; return [M.num(r.from), M.num(r.to), k.len, M.num(r.recovered), rd(k.tcr), rd(k.scr), rd(k.rqd), k.fi === null ? null : rd(k.fi), r.pieces || '', M.num(r.fractures)]; }));
     const discs = [[`Depth (${u.d})`, 'Type', 'Dip (deg)', 'Count', 'Spacing', 'Roughness', 'Aperture', 'Infill', 'Notes']]
@@ -64,10 +65,10 @@ window.CL = window.CL || {};
 
   async function restore(file) {
     const j = JSON.parse(await file.text());
-    if (!j || j.app !== 'CoreLog Field' || !j.borehole) throw new Error('This is not a CoreLog backup file');
+    if (!j || j.app !== 'CoreLog Field' || !j.borehole) throw new Error(CL.I18N.T('This is not a CoreLog backup file'));
     const bh = j.borehole;
     const exists = await CL.DB.get('boreholes', bh.id);
-    if (exists && !confirm(`Borehole ${bh.bhId} already exists on this device. Replace it with the backup?`)) return null;
+    if (exists && !confirm(CL.I18N.T(`Borehole ${bh.bhId} already exists on this device. Replace it with the backup?`))) return null;
     if (exists) await CL.DB.delBorehole(bh.id);
     await CL.DB.put('boreholes', bh);
     for (const p of j.photos || []) { const blob = await CL.Photo.dataURLToBlob(p.data); delete p.data; await CL.DB.put('photos', { ...p, blob }); }
