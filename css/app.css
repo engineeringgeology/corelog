@@ -1,4 +1,6 @@
 :root{--navy:#10243a;--navy2:#1d3a5a;--amber:#ffd166;--bg:#f4f6f9;--card:#fff;--ink:#14202c;--mut:#5f6f80;--line:#d8dfe7;--red:#c0392b;--ok:#1e8e5a;--r:12px}
+[hidden]{display:none!important}
+@media (display-mode: standalone){.install{display:none!important}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 body{padding-bottom:env(safe-area-inset-bottom)}
