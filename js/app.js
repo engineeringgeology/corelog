@@ -524,7 +524,7 @@
   }
 
   // ---------- boot ----------
-  CL.VERSION = '1.0.3';
+  CL.VERSION = '1.0.4';
   async function boot() {
     try {
       S.settings = (await DB.meta('settings')) || { standard: 'BS', units: 'm', method: D.methods[0], geologist: '' };
