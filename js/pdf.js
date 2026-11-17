@@ -27,7 +27,7 @@ window.CL = window.CL || {};
 
     // columns
     const cols = [
-      ['depth', `Depth\n(${u.d})`, 11], ['elev', `Elev.\n(${u.d})`, 11], ['leg', 'Legend', 14], ['desc', 'Description of strata', 72],
+      ['depth', `Depth\n(${u.d})`, 11], ['elev', `Thick.\n(${u.d})`, 11], ['leg', 'Legend', 14], ['desc', 'Description of strata', 72],
       ['wat', 'Water', 7], ['smp', 'Samples', 20], ['spt', 'Tests\nSPT N', 14], ['tcr', 'TCR\n%', 10], ['scr', 'SCR\n%', 10], ['rqd', 'RQD\n%', 10], ['fi', `FI\n${u.d === 'ft' ? '/ft' : '/m'}`, 11]
     ];
     let x = ML; const C = {};
@@ -69,7 +69,7 @@ window.CL = window.CL || {};
           doc.line(C.depth.x, yb, C.desc.x + C.desc.w, yb);
           doc.setFontSize(6.5); doc.setFont('helvetica', 'bold');
           doc.text(M.f2(b), C.depth.x + 1, yb - 0.8);
-          if (elev !== null) doc.text((elev - b).toFixed(2), C.elev.x + 1, yb - 0.8);
+          doc.text((b - a).toFixed(2), C.elev.x + 1, yb - 0.8);
           doc.setFont('helvetica', 'normal');
         }
         // description: only on the page where the layer starts (continuation note otherwise)
