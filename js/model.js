@@ -29,8 +29,10 @@ window.CL = window.CL || {};
   function colourOf(iv) { return join([iv.colourMod, iv.colour]); }
 
   // Build a standard-compliant description from the picked fields
-  function describe(iv, std) {
+  function describe(iv, std, lang) {
     if (iv.descOverride && iv.desc) return iv.desc;
+    const l = lang || (CL.I18N ? CL.I18N.lang : 'en');
+    if (l !== 'en' && CL.I18N) return CL.I18N.describe(iv, std, l);
     let s = '';
     if (iv.kind === 'rock') {
       if (std === 'USCS') {
