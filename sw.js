@@ -1,5 +1,5 @@
 /* Offline cache: the whole app is stored on the phone on first visit */
-const V = 'corelog-v1.1.0';
+const V = 'corelog-v1.1.1';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'lib/jspdf.umd.min.js', 'lib/xlsx.mini.min.js',
   'js/data.js', 'js/i18n-terms.js', 'js/i18n.js', 'js/db.js', 'js/model.js', 'js/patterns.js', 'js/photo.js', 'js/pdf.js', 'js/export.js', 'js/license.js', 'js/app.js',
