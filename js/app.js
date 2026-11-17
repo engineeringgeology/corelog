@@ -524,7 +524,7 @@
   }
 
   // ---------- boot ----------
-  CL.VERSION = '1.0.2';
+  CL.VERSION = '1.0.3';
   async function boot() {
     try {
       S.settings = (await DB.meta('settings')) || { standard: 'BS', units: 'm', method: D.methods[0], geologist: '' };
@@ -534,7 +534,11 @@
     window.addEventListener('hashchange', route);
     route();
     if ('serviceWorker' in navigator && location.protocol === 'https:' || location.hostname === 'localhost') {
-      navigator.serviceWorker && navigator.serviceWorker.register('sw.js').catch(() => { });
+      if (navigator.serviceWorker) {
+        const had = !!navigator.serviceWorker.controller; let reloaded = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => { if (had && !reloaded) { reloaded = true; location.reload(); } });
+        navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(r => r.update()).catch(() => { });
+      }
     }
     // install prompt (Android)
     window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); CL._ip = e; const b = $('#installBtn'); if (b) b.hidden = false; });
