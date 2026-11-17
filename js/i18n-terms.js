@@ -12,7 +12,7 @@ CL.I18N_TERMS = `
 noun:CLAY|ARGILLA@f|ARCILLA@f|ARGILA@f|ARGILE@f
 noun:SILT|LIMO@m|LIMO@m|SILTE@m|LIMON@m
 noun:SAND|SABBIA@f|ARENA@f|AREIA@f|SABLE@m
-noun:GRAVEL|GHIAIA@f|GRAVA@f|PEDREGULHO@m|GRAVE@f
+noun:GRAVEL|GHIAIA@f|GRAVA@f|PEDREGULHO@m|GRAVIER@m
 noun:COBBLES|CIOTTOLI@mp|BOLOS@mp|CALHAUS@mp|CAILLOUX@mp
 noun:BOULDERS|BLOCCHI@mp|BLOQUES@mp|BLOCOS@mp|BLOCS@mp
 noun:PEAT|TORBA@f|TURBA@f|TURFA@f|TOURBE@f
@@ -50,12 +50,12 @@ noun:QUARTZITE|QUARZITE@f|CUARCITA@f|QUARTZITO@m|QUARTZITE@m
 noun:MARBLE|MARMO@m|MÁRMOL@m|MÁRMORE@m|MARBRE@m
 noun:SERPENTINITE|SERPENTINITE@f|SERPENTINITA@f|SERPENTINITO@m|SERPENTINITE@f
 noun:FLYSCH|FLYSCH@m|FLYSCH@m|FLYSCH@m|FLYSCH@m
-uscs:GW|GHIAIA ben gradata@f|GRAVA bien graduada@f|PEDREGULHO bem graduado@m|GRAVE bien graduée@f
-uscs:GP|GHIAIA mal gradata@f|GRAVA mal graduada@f|PEDREGULHO mal graduado@m|GRAVE mal graduée@f
-uscs:GM|GHIAIA limosa@f|GRAVA limosa@f|PEDREGULHO siltoso@m|GRAVE limoneuse@f
-uscs:GC|GHIAIA argillosa@f|GRAVA arcillosa@f|PEDREGULHO argiloso@m|GRAVE argileuse@f
-uscs:GW-GM|GHIAIA ben gradata con limo@f|GRAVA bien graduada con limo@f|PEDREGULHO bem graduado com silte@m|GRAVE bien graduée avec limon@f
-uscs:GP-GC|GHIAIA mal gradata con argilla@f|GRAVA mal graduada con arcilla@f|PEDREGULHO mal graduado com argila@m|GRAVE mal graduée avec argile@f
+uscs:GW|GHIAIA ben gradata@f|GRAVA bien graduada@f|PEDREGULHO bem graduado@m|GRAVIER bien gradué@m
+uscs:GP|GHIAIA mal gradata@f|GRAVA mal graduada@f|PEDREGULHO mal graduado@m|GRAVIER mal gradué@m
+uscs:GM|GHIAIA limosa@f|GRAVA limosa@f|PEDREGULHO siltoso@m|GRAVIER limoneux@m
+uscs:GC|GHIAIA argillosa@f|GRAVA arcillosa@f|PEDREGULHO argiloso@m|GRAVIER argileux@m
+uscs:GW-GM|GHIAIA ben gradata con limo@f|GRAVA bien graduada con limo@f|PEDREGULHO bem graduado com silte@m|GRAVIER bien gradué avec limon@m
+uscs:GP-GC|GHIAIA mal gradata con argilla@f|GRAVA mal graduada con arcilla@f|PEDREGULHO mal graduado com argila@m|GRAVIER mal gradué avec argile@m
 uscs:SW|SABBIA ben gradata@f|ARENA bien graduada@f|AREIA bem graduada@f|SABLE bien gradué@m
 uscs:SP|SABBIA mal gradata@f|ARENA mal graduada@f|AREIA mal graduada@f|SABLE mal gradué@m
 uscs:SM|SABBIA limosa@f|ARENA limosa@f|AREIA siltosa@f|SABLE limoneux@m
@@ -64,11 +64,11 @@ uscs:SW-SM|SABBIA ben gradata con limo@f|ARENA bien graduada con limo@f|AREIA be
 uscs:SP-SM|SABBIA mal gradata con limo@f|ARENA mal graduada con limo@f|AREIA mal graduada com silte@f|SABLE mal gradué avec limon@m
 uscs:SP-SC|SABBIA mal gradata con argilla@f|ARENA mal graduada con arcilla@f|AREIA mal graduada com argila@f|SABLE mal gradué avec argile@m
 uscs:ML|LIMO@m|LIMO@m|SILTE@m|LIMON@m
-uscs:CL|ARGILLA magra@f|ARCILLA de baja plasticidad@f|ARGILA de baixa plasticidade@f|ARGILE peu plastique@f
+uscs:CL|ARGILLA di bassa plasticità@f|ARCILLA de baja plasticidad@f|ARGILA de baixa plasticidade@f|ARGILE peu plastique@f
 uscs:CL-ML|ARGILLA limosa@f|ARCILLA limosa@f|ARGILA siltosa@f|ARGILE limoneuse@f
 uscs:OL|LIMO / ARGILLA organica@m|LIMO / ARCILLA orgánica@m|SILTE / ARGILA orgânica@m|LIMON / ARGILE organique@m
 uscs:MH|LIMO elastico@m|LIMO elástico@m|SILTE elástico@m|LIMON très plastique@m
-uscs:CH|ARGILLA grassa@f|ARCILLA de alta plasticidad@f|ARGILA de alta plasticidade@f|ARGILE très plastique@f
+uscs:CH|ARGILLA di alta plasticità@f|ARCILLA de alta plasticidad@f|ARGILA de alta plasticidade@f|ARGILE très plastique@f
 uscs:OH|ARGILLA / LIMO organico ad alta plasticità@f|ARCILLA / LIMO orgánico de alta plasticidad@f|ARGILA / SILTE orgânico de alta plasticidade@f|ARGILE / LIMON organique très plastique@f
 uscs:PT|TORBA@f|TURBA@f|TURFA@f|TOURBE@f
 consistency:very soft|molto moll^|muy bland~|muito mole§|{très mou/très molle/très mous/très molles}
@@ -77,8 +77,8 @@ consistency:firm|moderatamente consistent^|firme§|médi~|ferme§
 consistency:stiff|consistent^|rígid~|rij~|raide§
 consistency:very stiff|molto consistent^|muy rígid~|muito rij~|très raide§
 consistency:hard|dur~|dur~|dur~|dur~
-density:very loose|molto sciolt~|muy suelt~|muito solt~|très lâche§
-density:loose|sciolt~|suelt~|solt~|lâche§
+density:very loose|molto sciolt~|muy suelt~|muito fof~|très lâche§
+density:loose|sciolt~|suelt~|fof~|lâche§
 density:medium dense|mediamente addensat~|medianamente dens~|medianamente compact~|moyennement dense§
 density:dense|addensat~|dens~|compact~|dense§
 density:very dense|molto addensat~|muy dens~|muito compact~|très dense§
@@ -110,12 +110,12 @@ secondary:organic|{organico/organica/organici/organiche}|orgánic~|orgânic~|org
 secondary:with cobbles|con ciottoli|con bolos|com calhaus|avec cailloux
 secondary:with boulders|con blocchi|con bloques|com blocos|avec blocs
 secondary:with sand|con sabbia|con arena|com areia|avec sable
-secondary:with gravel|con ghiaia|con grava|com pedregulho|avec grave
+secondary:with gravel|con ghiaia|con grava|com pedregulho|avec gravier
 secondary:with silt|con limo|con limo|com silte|avec limon
 secondary:with clay|con argilla|con arcilla|com argila|avec argile
 secondary:with organics|con sostanza organica|con materia orgánica|com matéria orgânica|avec matière organique
 secondary:trace sand|con tracce di sabbia|con trazas de arena|com traços de areia|avec traces de sable
-secondary:trace gravel|con tracce di ghiaia|con trazas de grava|com traços de pedregulho|avec traces de grave
+secondary:trace gravel|con tracce di ghiaia|con trazas de grava|com traços de pedregulho|avec traces de gravier
 shape:angular|spigolos~|angulos~|angulos~|{anguleux/anguleuse/anguleux/anguleuses}
 shape:subangular|subspigolos~|subangulos~|subangulos~|{subanguleux/subanguleuse/subanguleux/subanguleuses}
 shape:subrounded|subarrotondat~|subredondead~|subarredondad~|subarrondi~
@@ -257,10 +257,10 @@ infill:calcite|calcite|calcita|calcita|calcite
 infill:quartz|quarzo|cuarzo|quartzo|quartz
 infill:gypsum|gesso|yeso|gipsita|gypse
 infill:chlorite|clorite|clorita|clorita|chlorite
-infill:gouge|gouge (milonite argillosa)|salbanda arcillosa|preenchimento argiloso de falha|gouge argileuse
+infill:gouge|riempimento argilloso di faglia (gouge)|salbanda arcillosa (gouge)|preenchimento argiloso de falha (gouge)|remplissage argileux de faille (gouge)
 infill:breccia|breccia|brecha|brecha|brèche
 sampleType:Disturbed (bag/jar)|Rimaneggiato (sacchetto/barattolo)|Alterada (bolsa/frasco)|Deformada (saco/frasco)|Remanié (sac/bocal)
-sampleType:Bulk|Campione voluminoso|Muestra de saco|Amostra volumosa|Échantillon en vrac
+sampleType:Bulk|Campione in sacco (bulk)|Muestra en saco (bulk)|Amostra em saco (bulk)|Échantillon en vrac
 sampleType:Undisturbed (U100/UT)|Indisturbato (U100/UT)|Inalterada (U100/UT)|Indeformada (U100/UT)|Intact (U100/UT)
 sampleType:Shelby tube|Fustella Shelby|Tubo Shelby|Tubo Shelby|Tube Shelby
 sampleType:Split spoon (SPT)|Campionatore SPT|Cuchara partida (SPT)|Amostrador SPT|Carottier fendu (SPT)
@@ -270,7 +270,7 @@ sampleType:Environmental sample|Campione ambientale|Muestra ambiental|Amostra am
 testType:Pocket penetrometer (kPa)|Penetrometro tascabile (kPa)|Penetrómetro de bolsillo (kPa)|Penetrômetro de bolso (kPa)|Pénétromètre de poche (kPa)
 testType:Hand vane Su (kPa)|Scissometro tascabile Su (kPa)|Molinete de mano Su (kPa)|Palheta manual Su (kPa)|Scissomètre de poche Su (kPa)
 testType:Lugeon / packer test (Lu)|Prova Lugeon (Lu)|Ensayo Lugeon (Lu)|Ensaio Lugeon (Lu)|Essai Lugeon (Lu)
-testType:Point load Is(50) (MPa)|Point load Is(50) (MPa)|Carga puntual Is(50) (MPa)|Carga pontual Is(50) (MPa)|Charge ponctuelle Is(50) (MPa)
+testType:Point load Is(50) (MPa)|Prova di carico puntuale Is(50) (MPa)|Carga puntual Is(50) (MPa)|Carga pontual Is(50) (MPa)|Charge ponctuelle Is(50) (MPa)
 testType:Falling head k (m/s)|Prova a carico variabile k (m/s)|Ensayo de carga variable k (m/s)|Ensaio de carga variável k (m/s)|Essai à charge variable k (m/s)
 testType:PID (ppm)|PID (ppm)|PID (ppm)|PID (ppm)|PID (ppm)
 testType:Other|Altro|Otro|Outro|Autre
@@ -281,7 +281,7 @@ method:Hollow stem auger|Trivella a elica cava|Barrena helicoidal hueca|Trado he
 method:Solid stem auger|Trivella a elica continua|Barrena helicoidal maciza|Trado helicoidal maciço|Tarière à axe plein
 method:Cable percussion|Percussione a fune|Percusión con cable|Percussão a cabo|Battage au câble
 method:Sonic|Sonica|Sónico|Sônica|Sonique
-method:Rotary open hole|Distruzione di nucleo|Rotación a destroza|Rotativa sem amostragem|Destructif rotatif
+method:Rotary open hole|Perforazione a distruzione di nucleo|Rotación a destroza|Sondagem rotativa a destruição|Forage destructif rotatif
 method:Window sampler|Campionatore a finestra|Tomamuestras de ventana|Amostrador de janela|Carottier à fenêtre
 method:Trial pit|Pozzetto esplorativo|Calicata|Poço de inspeção|Fouille de reconnaissance
 piezo:Standpipe piezometer|Piezometro a tubo aperto|Piezómetro abierto|Piezômetro de tubo aberto|Piézomètre à tube ouvert
@@ -295,13 +295,13 @@ lith:Fill / Made ground|Riporto|Relleno|Aterro|Remblai
 lith:Clay|Argilla|Arcilla|Argila|Argile
 lith:Silt|Limo|Limo|Silte|Limon
 lith:Sand|Sabbia|Arena|Areia|Sable
-lith:Gravel|Ghiaia|Grava|Pedregulho|Grave
+lith:Gravel|Ghiaia|Grava|Pedregulho|Gravier
 lith:Cobbles / Boulders|Ciottoli / Blocchi|Bolos / Bloques|Calhaus / Blocos|Cailloux / Blocs
 lith:Peat / Organic|Torba / Organico|Turba / Orgánico|Turfa / Orgânico|Tourbe / Organique
 lith:Clayey / silty sand|Sabbia argillosa / limosa|Arena arcillosa / limosa|Areia argilosa / siltosa|Sable argileux / limoneux
 lith:Sandy clay / silt|Argilla / limo sabbioso|Arcilla / limo arenoso|Argila / silte arenoso|Argile / limon sableux
-lith:Clayey / silty gravel|Ghiaia argillosa / limosa|Grava arcillosa / limosa|Pedregulho argiloso / siltoso|Grave argileuse / limoneuse
-lith:Sandy gravel|Ghiaia sabbiosa|Grava arenosa|Pedregulho arenoso|Grave sableuse
+lith:Clayey / silty gravel|Ghiaia argillosa / limosa|Grava arcillosa / limosa|Pedregulho argiloso / siltoso|Gravier argileux / limoneux
+lith:Sandy gravel|Ghiaia sabbiosa|Grava arenosa|Pedregulho arenoso|Gravier sableux
 lith:Sandstone|Arenaria|Arenisca|Arenito|Grès
 lith:Siltstone|Siltite|Limolita|Siltito|Siltite
 lith:Mudstone / Claystone|Pelite / Argillite|Lodolita / Arcillita|Lamito / Argilito|Pélite / Argilite
