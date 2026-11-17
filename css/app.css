@@ -66,6 +66,7 @@ h4{margin:16px 0 8px;font-size:15px;color:var(--navy)}
 .stratum .pat{width:44px;height:100%;display:block;border-right:1px solid #9fb0c2}
 .stratum .dep{display:flex;flex-direction:column;justify-content:space-between;padding:4px 6px;font-size:13px;border-right:1px solid #e1e7ee;background:#fafbfd}
 .stratum .dep b:last-child{color:var(--mut);font-weight:600}
+.stratum .dep small{font-size:11px;color:var(--mut)}
 .stratum .dsc{padding:6px 10px;font-size:14px}
 .fab{position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:6;background:var(--amber);color:var(--navy);border:0;border-radius:28px;padding:14px 20px;font-weight:700;box-shadow:0 6px 18px rgba(16,36,58,.28)}
 .tbl{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
