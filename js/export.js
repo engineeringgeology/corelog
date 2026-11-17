@@ -32,12 +32,15 @@ window.CL = window.CL || {};
 
   function xlsxBlob(bhs) {
     const wb = XLSX.utils.book_new();
+    const usedNames = new Set();
     bhs.forEach(bh => {
       const s = sheets(bh);
       Object.entries(s).forEach(([name, rows]) => {
         const ws = XLSX.utils.aoa_to_sheet(rows);
         ws['!cols'] = rows[0].map((_, i) => ({ wch: Math.min(60, Math.max(10, ...rows.map(r => String(r[i] ?? '').length))) }));
-        const nm = (bhs.length > 1 ? `${bh.bhId} ${name}` : name).replace(/[\\\/\?\*\[\]:]/g, '-').slice(0, 31);
+        let nm = (bhs.length > 1 ? `${bh.bhId} ${name}` : name).replace(/[\\\/\?\*\[\]:]/g, '-').slice(0, 31);
+        for (let k = 2; usedNames.has(nm.toLowerCase()); k++) nm = nm.slice(0, 27) + ' (' + k + ')';
+        usedNames.add(nm.toLowerCase());
         XLSX.utils.book_append_sheet(wb, ws, nm);
       });
     });
