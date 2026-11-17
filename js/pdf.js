@@ -5,7 +5,8 @@ window.CL = window.CL || {};
 (function () {
   const M = CL.M, P = CL.Patterns, D = CL.DATA;
   const t = s => String(s ?? '').replace(/[–—]/g, '-').replace(/≥/g, '>=').replace(/≤/g, '<=').replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[^\x00-\xFF]/g, '');
-  const lithName = k => (D.lith.find(x => x[0] === k) || [k, k])[1];
+  const L = s => CL.I18N.T(s), TM = (c, v) => CL.I18N.term(c, v);
+  const lithName = k => TM('lith', (D.lith.find(x => x[0] === k) || [k, k])[1]);
 
   async function build(bh, opts = {}) {
     const { jsPDF } = window.jspdf;
@@ -26,11 +27,12 @@ window.CL = window.CL || {};
     const tests = M.sortBy(bh.tests, 'depth');
     const used = [...new Set(ivs.map(i => M.patternOf(i, std)))];
     const truncated = [];
+    const bil = !!opts.bilingual && CL.I18N.lang !== 'en';
 
     // columns
     const cols = [
-      ['depth', `Depth\n(${u.d})`, 11], ['elev', `Thick.\n(${u.d})`, 11], ['leg', 'Legend', 14], ['desc', 'Description of strata', 72],
-      ['wat', 'Water', 7], ['smp', 'Samples', 20], ['spt', 'Tests\nSPT N', 14], ['tcr', 'TCR\n%', 10], ['scr', 'SCR\n%', 10], ['rqd', 'RQD\n%', 10], ['fi', `FI\n${u.d === 'ft' ? '/ft' : '/m'}`, 11]
+      ['depth', L(`Depth\n(${u.d})`), 11], ['elev', L(`Thick.\n(${u.d})`), 11], ['leg', L('Legend'), 14], ['desc', L('Description of strata'), 72],
+      ['wat', L('Water'), 7], ['smp', L('Samples'), 20], ['spt', L('Tests\nSPT N'), 14], ['tcr', 'TCR\n%', 10], ['scr', 'SCR\n%', 10], ['rqd', 'RQD\n%', 10], ['fi', `FI\n${u.d === 'ft' ? '/ft' : '/m'}`, 11]
     ];
     let x = ML; const C = {};
     cols.forEach(c => { C[c[0]] = { x, w: c[2], label: c[1] }; x += c[2]; });
@@ -82,7 +84,8 @@ window.CL = window.CL || {};
           } else iv._lbl = false;
           lastEnd = yb;
         }
-        let desc = t(M.describe(iv, std));
+        let desc = t(M.describe(iv, std)); let descE = bil ? t(M.describe(iv, std, 'en')) : '';
+        if (descE === desc) descE = '';
         if (!iv._lbl) desc = `(${M.f2(a)}-${M.f2(b)} ${u.d}) ` + desc;
         const top = Math.max(ya, nextFreeY);
         if (a >= dTop) {
@@ -92,15 +95,21 @@ window.CL = window.CL || {};
           else { doc.setLineWidth(0.15); doc.line(RX, ya, DX + 2, top); doc.setLineWidth(0.25); doc.line(DX + 2, top, DX + DW, top); }
           if (top > Y1 - 2.5) { truncated.push(iv); return; }
           const boxH = Math.max(Math.min(yb, Y1) - top - 1.0, 2.4), tw = DW - 4;
-          let fs = 7, lines, lh;
-          for (; fs >= 5.5; fs -= 0.5) { doc.setFontSize(fs); lines = doc.splitTextToSize(desc, tw); lh = fs * 0.36; if (lines.length * lh <= boxH) break; }
-          fs = Math.max(fs, 5.5); doc.setFontSize(fs); lh = fs * 0.36;
+          let fs = 7, lines, linesE = [], lh;
+          const split = () => { lines = doc.splitTextToSize(desc, tw); if (descE) { doc.setFont('helvetica', 'italic'); linesE = doc.splitTextToSize(descE, tw); doc.setFont('helvetica', 'normal'); } };
+          for (; fs >= 5.5; fs -= 0.5) { doc.setFontSize(fs); split(); lh = fs * 0.4; if ((lines.length + linesE.length) * lh <= boxH) break; }
+          fs = Math.max(fs, 5.5); doc.setFontSize(fs); lh = fs * 0.4; split();
           const maxL = Math.max(1, Math.min(Math.floor(boxH / lh), Math.floor((Y1 - top - 0.6) / lh)));
-          if (lines.length > maxL) { lines = lines.slice(0, maxL); lines[maxL - 1] = lines[maxL - 1].replace(/\s*\S*$/, '') + ' ...[*]'; truncated.push(iv); }
-          doc.setTextColor(15); doc.text(lines, DX + 2.5, top + 0.5 + lh * 0.8);
-          nextFreeY = top + 0.9 + lines.length * lh;
+          if (lines.length + linesE.length > maxL) {
+            if (lines.length >= maxL) { lines = lines.slice(0, maxL); lines[maxL - 1] = lines[maxL - 1].replace(/\s*\S*$/, '') + ' ...[*]'; linesE = []; }
+            else { const k = maxL - lines.length; linesE = linesE.slice(0, k); linesE[k - 1] = linesE[k - 1].replace(/\s*\S*$/, '') + ' ...[*]'; }
+            truncated.push(iv);
+          }
+          doc.setTextColor(15); doc.text(lines, DX + 2.5, top + 0.5 + lh * 0.8, { lineHeightFactor: 0.4 / 0.3528 });
+          if (linesE.length) { doc.setFont('helvetica', 'italic'); doc.setTextColor(85); doc.text(linesE, DX + 2.5, top + 0.5 + lh * (0.8 + lines.length), { lineHeightFactor: 0.4 / 0.3528 }); doc.setFont('helvetica', 'normal'); doc.setTextColor(15); }
+          nextFreeY = top + 0.9 + (lines.length + linesE.length) * lh;
         } else if (yb - ya > 6) {
-          doc.setFontSize(6); doc.setTextColor(110); doc.text('(continued)', DX + 2.5, ya + 3); doc.setTextColor(15);
+          doc.setFontSize(6); doc.setTextColor(110); doc.text(t(L('(continued)')), DX + 2.5, ya + 3); doc.setTextColor(15);
           nextFreeY = ya + 4;
         }
       });
@@ -160,7 +169,7 @@ window.CL = window.CL || {};
       if (fd > dTop && fd <= dBot) {
         const y = yOf(fd, pg), nextEnd = pageNextFree;
         doc.setFontSize(7); doc.setFont('helvetica', 'bold');
-        doc.text(t(`End of borehole at ${M.f2(fd)} ${u.d}`), C.desc.x + 2.5, Math.min(Math.max(y, nextEnd) + 4, Y1 - 1)); doc.setFont('helvetica', 'normal');
+        doc.text(t(L(`End of borehole at ${M.f2(fd)} ${u.d}`)), C.desc.x + 2.5, Math.min(Math.max(y, nextEnd) + 4, Y1 - 1)); doc.setFont('helvetica', 'normal');
       }
       footer(doc, bh, used, opts, pg === pages - 1);
     }
@@ -176,34 +185,35 @@ window.CL = window.CL || {};
     const u = M.U(bh);
     doc.setFillColor(16, 36, 58); doc.rect(10, 8, 190, 9, 'F');
     doc.setTextColor(255); doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
-    doc.text('BOREHOLE LOG', 12, 14);
+    doc.text(t(L('BOREHOLE LOG')), 12, 14);
     doc.setFontSize(10); doc.text(t(bh.bhId || ''), 105, 14, { align: 'center' });
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.text(`Sheet ${pg} of ${pages}`, 198, 14, { align: 'right' });
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.text(t(L(`Sheet ${pg} of ${pages}`)), 198, 14, { align: 'right' });
     doc.setTextColor(15);
     const coord = (bh.lat != null && bh.lon != null) ? `${(+bh.lat).toFixed(6)}, ${(+bh.lon).toFixed(6)} (WGS84${bh.gpsAcc ? ', +/-' + Math.round(bh.gpsAcc) + ' m' : ''})` : '';
     const F = [
       ['Project', bh.project], ['Project no.', bh.projectNo], ['Client', bh.client],
       ['Location', bh.location], ['Coordinates', coord], ['Ground level', bh.elev != null && bh.elev !== '' ? `${bh.elev} ${u.d}` : ''],
-      ['Method', bh.method], ['Core / hole dia.', bh.diameter], ['Inclination', bh.inclination ? bh.inclination + ' deg' : ''],
+      ['Method', TM('method', bh.method)], ['Core / hole dia.', bh.diameter], ['Inclination', bh.inclination ? bh.inclination + ' deg' : ''],
       ['Rig', bh.rig], ['Contractor / driller', [bh.contractor, bh.driller].filter(Boolean).join(' / ')], ['Logged by', bh.geologist],
-      ['Date started', bh.dateStart], ['Date completed', bh.dateEnd], ['Standard', D.standards[bh.standard] + (opts.scaleLabel ? '  ·  Scale ' + opts.scaleLabel : '')],
-      ['Final depth', `${M.f2(M.maxDepth(bh))} ${u.d}`], ['Water first struck', bh.gwFirst != null && bh.gwFirst !== '' ? `${M.f2(bh.gwFirst)} ${u.d}` : 'not recorded'], ['Water standing', bh.gwStanding != null && bh.gwStanding !== '' ? `${M.f2(bh.gwStanding)} ${u.d}` : 'not recorded']
+      ['Date started', bh.dateStart], ['Date completed', bh.dateEnd], ['Standard', D.standards[bh.standard] + (opts.scaleLabel ? '  ·  ' + L('Scale') + ' ' + opts.scaleLabel : '')],
+      ['Final depth', `${M.f2(M.maxDepth(bh))} ${u.d}`], ['Water first struck', bh.gwFirst != null && bh.gwFirst !== '' ? `${M.f2(bh.gwFirst)} ${u.d}` : L('not recorded')], ['Water standing', bh.gwStanding != null && bh.gwStanding !== '' ? `${M.f2(bh.gwStanding)} ${u.d}` : L('not recorded')]
     ];
     const cw = 190 / 3; doc.setDrawColor(170); doc.setLineWidth(0.15);
     F.forEach((f, i) => {
       const r = Math.floor(i / 3), c = i % 3; const x = 10 + c * cw, y = 18 + r * 4.6;
       doc.rect(x, y, cw, 4.6);
-      doc.setFontSize(5.6); doc.setTextColor(100); doc.text(t(f[0]), x + 1, y + 3.1);
+      doc.setFontSize(5.6); doc.setTextColor(100); const lab = t(L(f[0])); doc.text(lab, x + 1, y + 3.1);
+      const vx = Math.max(20, doc.getTextWidth(lab) + 2.5), room = cw - vx - 1;
       let val = t(f[1] || ''), fs = 6.8; doc.setFontSize(fs);
-      while (fs > 5 && doc.getTextWidth(val) > cw - 21) { fs -= 0.3; doc.setFontSize(fs); }
-      while (val.length > 3 && doc.getTextWidth(val) > cw - 21) val = val.slice(0, -2);
-      doc.setTextColor(10); doc.text(val, x + 20, y + 3.2);
+      while (fs > 5 && doc.getTextWidth(val) > room) { fs -= 0.3; doc.setFontSize(fs); }
+      while (val.length > 3 && doc.getTextWidth(val) > room) val = val.slice(0, -2);
+      doc.setTextColor(10); doc.text(val, x + vx, y + 3.2);
     });
   }
 
   function footer(doc, bh, used, opts, last) {
     const y = 257; doc.setDrawColor(40); doc.setLineWidth(0.25); doc.rect(10, y, 190, 30);
-    doc.setFontSize(6.5); doc.setFont('helvetica', 'bold'); doc.text('LEGEND', 12, y + 3.5); doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5); doc.setFont('helvetica', 'bold'); doc.text(t(L('LEGEND')), 12, y + 3.5); doc.setFont('helvetica', 'normal');
     const sw = 7, sh = 4.5; let lx = 12, ly = y + 5.5;
     used.slice(0, 15).forEach(k => {
       P.draw(P.pdfPen(doc, '#333333'), k, lx, ly, sw, sh, 2.4); doc.setDrawColor(60); doc.setLineWidth(0.15); doc.rect(lx, ly, sw, sh);
@@ -213,14 +223,15 @@ window.CL = window.CL || {};
     // symbols
     const sy = y + 23.5;
     doc.setDrawColor(20, 90, 180); doc.setFillColor(20, 90, 180); doc.triangle(12, sy - 2.2, 15, sy - 2.2, 13.5, sy, 'FD');
-    doc.triangle(36, sy - 2.2, 39, sy - 2.2, 37.5, sy, 'S'); doc.setDrawColor(40);
-    doc.setFontSize(5.6); doc.text('Water first struck', 16, sy - 0.3); doc.text('Water standing level', 40, sy - 0.3);
-    doc.text('TCR total core recovery · SCR solid core recovery · RQD rock quality designation · FI fracture index', 70, sy - 0.3);
-    doc.text('Samples: D disturbed · B bulk · U/ST undisturbed · SS split spoon · C core · W water · ES environmental', 12, sy + 3);
-    if (bh.remarks) { doc.setFontSize(5.8); doc.text(t('Remarks: ' + bh.remarks).slice(0, 160), 12, sy + 6); }
+    doc.setFontSize(5.6); const w1 = t(L('Water first struck')), w2 = t(L('Water standing level')); const x2 = Math.max(36, 16 + doc.getTextWidth(w1) + 3);
+    doc.triangle(x2, sy - 2.2, x2 + 3, sy - 2.2, x2 + 1.5, sy, 'S'); doc.setDrawColor(40);
+    doc.text(w1, 16, sy - 0.3); doc.text(w2, x2 + 4, sy - 0.3);
+    const lx0 = Math.max(70, x2 + 4 + doc.getTextWidth(w2) + 4); let leg = t(L('TCR total core recovery · SCR solid core recovery · RQD rock quality designation · FI fracture index')); doc.setFontSize(5.6); while (doc.getTextWidth(leg) > 198 - lx0 && doc.getFontSize() > 4.2) doc.setFontSize(doc.getFontSize() - 0.2); doc.text(leg, lx0, sy - 0.3); doc.setFontSize(5.6);
+    doc.text(t(L('Samples: D disturbed · B bulk · U/ST undisturbed · SS split spoon · C core · W water · ES environmental')), 12, sy + 3);
+    if (bh.remarks) { doc.setFontSize(5.8); doc.text(t(L('Remarks: ') + bh.remarks).slice(0, 160), 12, sy + 6); }
     doc.setFontSize(5.2); doc.setTextColor(120);
-    doc.text(t(`CoreLog Field · Engineering Geology${opts.licensee ? ' · Licensed to ' + opts.licensee : ''}`), 198, 290, { align: 'right' });
-    doc.text(t(`Generated ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`), 10, 290);
+    doc.text(t(`CoreLog Field · Engineering Geology${opts.licensee ? ' · ' + L(`Licensed to ${opts.licensee}`) : ''}`), 198, 290, { align: 'right' });
+    doc.text(t(L(`Generated ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`)), 10, 290);
     doc.setTextColor(15);
   }
 
@@ -230,14 +241,14 @@ window.CL = window.CL || {};
     const drawHead = () => {
       doc.setFillColor(238, 242, 246); doc.rect(x, y, widths.reduce((a, b) => a + b), lh + 1, 'F');
       doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); let cx = x;
-      head.forEach((h, i) => { doc.text(t(h), cx + 1, y + 3.4); cx += widths[i]; }); doc.setFont('helvetica', 'normal'); y += lh + 1;
+      head.forEach((h, i) => { doc.text(t(L(h)), cx + 1, y + 3.4); cx += widths[i]; }); doc.setFont('helvetica', 'normal'); y += lh + 1;
     };
     drawHead();
     rows.forEach(r => {
       doc.setFontSize(6.5);
       const cells = r.map((c, i) => doc.splitTextToSize(t(c ?? ''), widths[i] - 2));
       const h = Math.max(...cells.map(c => c.length)) * 3 + 1.5;
-      if (y + h > 280) { doc.addPage(); y = 16; if (opts.title) { doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.text(t(opts.title + ' (cont.)'), x, y - 3); doc.setFont('helvetica', 'normal'); } drawHead(); }
+      if (y + h > 280) { doc.addPage(); y = 16; if (opts.title) { doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.text(t(L(opts.title) + ' (cont.)'), x, y - 3); doc.setFont('helvetica', 'normal'); } drawHead(); }
       let cx = x; doc.setDrawColor(200); doc.setLineWidth(0.1); doc.line(x, y + h, x + widths.reduce((a, b) => a + b), y + h);
       cells.forEach((c, i) => { doc.text(c, cx + 1, y + 3); cx += widths[i]; });
       y += h;
@@ -249,43 +260,43 @@ window.CL = window.CL || {};
     const u = M.U(bh), std = bh.standard;
     const blocks = [];
     if (truncated.length) blocks.push(['Full stratum descriptions [*]', [16, 16, 158], [`From (${u.d})`, `To (${u.d})`, 'Description'],
-      truncated.map(i => [M.f2(i.from), M.f2(i.to), M.describe(i, std)])]);
+      truncated.map(i => { const a = M.describe(i, std), e = opts.bilingual ? M.describe(i, std, 'en') : a; return [M.f2(i.from), M.f2(i.to), a + (e !== a ? '\n[EN] ' + e : '')]; })]);
     if (bh.runs.length) blocks.push(['Core runs', [18, 18, 18, 22, 18, 18, 18, 18, 42], [`From`, `To`, `Run (${u.d})`, `Recovered (${u.d})`, 'TCR %', 'SCR %', 'RQD %', 'FI', `Pieces (${u.piece})`],
       M.sortBy(bh.runs, 'from').map(r => { const k = M.runCalc(r, bh); const f = v => v === null ? '-' : Math.round(v); return [M.f2(r.from), M.f2(r.to), M.f2(k.len), M.f2(r.recovered), f(k.tcr), f(k.scr), f(k.rqd), k.fi === null ? '-' : k.fi.toFixed(1), r.pieces || '']; })]);
     if (bh.discs.length) blocks.push(['Discontinuities', [16, 24, 14, 12, 22, 30, 26, 22, 24], [`Depth (${u.d})`, 'Type', 'Dip (deg)', 'Count', 'Spacing', 'Roughness', 'Aperture', 'Infill', 'Notes'],
-      M.sortBy(bh.discs, 'depth').map(d => [M.f2(d.depth), d.type, d.dip, d.count, d.spacing, d.roughness, d.aperture, d.infill, d.notes])]);
+      M.sortBy(bh.discs, 'depth').map(d => [M.f2(d.depth), TM('discType', d.type), d.dip, d.count, TM('spacing', d.spacing), TM('roughness', d.roughness), TM('aperture', d.aperture), TM('infill', d.infill), d.notes])]);
     if (bh.samples.length) blocks.push(['Samples & SPT', [18, 18, 14, 22, 34, 14, 70], [`Top (${u.d})`, `Bottom (${u.d})`, 'Type', 'Ref.', 'SPT blows', 'N', 'Notes'],
       M.sortBy(bh.samples, 'top').map(s => [M.f2(s.top), M.f2(s.bottom), s.type, s.ref, s.blows, M.sptN(s) ?? '', s.notes])]);
     if (bh.tests.length) blocks.push(['Field tests', [18, 50, 24, 98], [`Depth (${u.d})`, 'Test', 'Value', 'Notes'],
-      M.sortBy(bh.tests, 'depth').map(x => [M.f2(x.depth), (D.testTypes.find(k => k[0] === x.type) || [0, x.type])[1], x.value, x.notes])]);
+      M.sortBy(bh.tests, 'depth').map(x => [M.f2(x.depth), TM('testType', (D.testTypes.find(k => k[0] === x.type) || [0, x.type])[1]), x.value, x.notes])]);
     const pz = bh.piezo || {};
     if (pz.installed) blocks.push(['Installation', [60, 130], ['Item', 'Value'], [
-      ['Type', pz.type], ['Pipe diameter', pz.dia], [`Response zone / screen (${u.d})`, `${M.f2(pz.screenTop)} - ${M.f2(pz.screenBottom)}`],
-      [`Seal (${u.d})`, `${M.f2(pz.sealTop)} - ${M.f2(pz.sealBottom)}`], [`Tip depth (${u.d})`, M.f2(pz.tip)], [`Stick-up (${u.d})`, M.f2(pz.stickup)], ['Notes', pz.notes]]]);
+      [L('Type'), TM('piezo', pz.type)], [L('Pipe diameter'), pz.dia], [L(`Response zone / screen (${u.d})`), `${M.f2(pz.screenTop)} - ${M.f2(pz.screenBottom)}`],
+      [L(`Seal (${u.d})`), `${M.f2(pz.sealTop)} - ${M.f2(pz.sealBottom)}`], [L(`Tip depth (${u.d})`), M.f2(pz.tip)], [L(`Stick-up (${u.d})`), M.f2(pz.stickup)], [L('Notes'), pz.notes]]]);
     if (bh.levels.length) blocks.push(['Water level readings', [40, 40, 110], ['Date / time', `Depth (${u.d})`, 'Notes'],
       bh.levels.map(l => [l.date, M.f2(l.depth), l.notes])]);
     if (!blocks.length) return;
     doc.addPage(); let y = 16;
-    doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.text(t(`${bh.bhId} - Log data`), 10, 11); doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.text(t(`${bh.bhId} - ${L('Log data')}`), 10, 11); doc.setFont('helvetica', 'normal');
     blocks.forEach(b => {
       if (y > 250) { doc.addPage(); y = 16; }
-      doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.text(t(b[0]), 10, y); doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.text(t(L(b[0])), 10, y); doc.setFont('helvetica', 'normal');
       y = table(doc, 10, y + 2, b[1], b[2], b[3], { title: b[0] });
     });
-    doc.setFontSize(5.2); doc.setTextColor(120); doc.text(t(`CoreLog Field · Engineering Geology${opts.licensee ? ' · Licensed to ' + opts.licensee : ''}`), 198, 290, { align: 'right' }); doc.setTextColor(15);
+    doc.setFontSize(5.2); doc.setTextColor(120); doc.text(t(`CoreLog Field · Engineering Geology${opts.licensee ? ' · ' + L(`Licensed to ${opts.licensee}`) : ''}`), 198, 290, { align: 'right' }); doc.setTextColor(15);
   }
 
   async function photoPages(doc, bh, opts) {
     const list = opts.photos.slice().sort((a, b) => (M.num(a.from) ?? 0) - (M.num(b.from) ?? 0));
     let slot = 0;
     for (const p of list) {
-      if (slot % 2 === 0) { doc.addPage(); doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.text(t(`${bh.bhId} - Core photographs`), 10, 11); doc.setFont('helvetica', 'normal'); }
+      if (slot % 2 === 0) { doc.addPage(); doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.text(t(`${bh.bhId} - ${L('Core photographs')}`), 10, 11); doc.setFont('helvetica', 'normal'); }
       const url = await CL.Photo.blobToDataURL(p.blob);
       const maxW = 190, maxH = 125; let w = maxW, h = p.h && p.w ? maxW * p.h / p.w : 100;
       if (h > maxH) { h = maxH; w = maxH * p.w / p.h; }
       const y = slot % 2 === 0 ? 16 : 150;
       doc.addImage(url, 'JPEG', 10 + (maxW - w) / 2, y, w, h, undefined, 'FAST');
-      doc.setFontSize(7); doc.text(t(`Box ${p.box} · ${M.f2(p.from)}-${M.f2(p.to)} ${M.U(bh).d} · ${p.date || ''}`), 10, y + h + 4);
+      doc.setFontSize(7); doc.text(t(`${L(`Box ${p.box}`)} · ${M.f2(p.from)}-${M.f2(p.to)} ${M.U(bh).d} · ${p.date || ''}`), 10, y + h + 4);
       slot++;
     }
   }
@@ -296,7 +307,7 @@ window.CL = window.CL || {};
       doc.setPage(i);
       doc.saveGraphicsState(); doc.setGState(new doc.GState({ opacity: 0.12 }));
       doc.setFontSize(70); doc.setTextColor(200, 0, 0); doc.setFont('helvetica', 'bold');
-      doc.text('DEMO VERSION', 105, 160, { align: 'center', angle: 35 });
+      doc.text(t(L('DEMO VERSION')), 105, 160, { align: 'center', angle: 35 });
       doc.restoreGraphicsState(); doc.setTextColor(15); doc.setFont('helvetica', 'normal');
     }
   }
