@@ -34,7 +34,7 @@ window.CL = window.CL || {};
     let s = '';
     if (iv.kind === 'rock') {
       if (std === 'USCS') {
-        s = [iv.rockName || 'ROCK', colourOf(iv), iv.grain, iv.weathering, iv.strength, iv.rstructure, iv.fracState].filter(Boolean).join(', ');
+        s = [iv.rockName || 'ROCK', colourOf(iv).replace(/grey/g, 'gray'), iv.grain, iv.weathering, iv.strength, iv.rstructure, iv.fracState].filter(Boolean).join(', ');
       } else {
         s = cap(join([iv.strength, iv.weathering, iv.rstructure, colourOf(iv), iv.grain, iv.rockName || 'ROCK']));
         if (iv.fracState) s += '. ' + cap(iv.fracState);
@@ -43,15 +43,18 @@ window.CL = window.CL || {};
       if (std === 'USCS') {
         const u = D.uscs.find(x => x[0] === iv.uscs);
         const head = u ? `${u[1]} (${u[0]})` : (iv.principal || 'SOIL');
-        const fine = /CLAY|SILT|PEAT/i.test(head) && !/GRAVEL|SAND/.test(head.split(' ').pop());
-        s = head + ': ' + [fine ? iv.consistency : iv.density, colourOf(iv), iv.moisture, fine ? iv.plasticity : iv.grading, iv.shape, iv.secondary, iv.structure].filter(Boolean).join(', ');
+        const fine = u ? /^(ML|CL|OL|MH|CH|OH|PT|CL-ML)$/.test(u[0]) : /CLAY|SILT|PEAT/.test(head);
+        const col = colourOf(iv).replace(/grey/g, 'gray');
+        const grad = /graded/i.test(head) ? '' : iv.grading;
+        s = head + ': ' + [fine ? iv.consistency : iv.density, col, iv.moisture, fine ? iv.plasticity : grad, iv.shape, iv.secondary, iv.structure].filter(Boolean).join(', ');
       } else {
         const p = iv.principal || 'SOIL';
         const fine = ['CLAY', 'SILT', 'PEAT'].includes(p);
         const state = fine ? iv.consistency : (['SAND', 'GRAVEL'].includes(p) ? iv.density : '');
         const size = p === 'SAND' ? iv.sandSize : '';
-        s = cap(join([state, iv.structure, colourOf(iv), iv.secondary, size, p]));
-        const extra = [iv.grading, iv.shape, iv.moisture, fine ? iv.plasticity : ''].filter(Boolean);
+        const shape = ['GRAVEL', 'COBBLES', 'BOULDERS'].includes(p) ? iv.shape : '';
+        s = cap(join([state, iv.structure, colourOf(iv), iv.secondary, shape, size, p]));
+        const extra = [iv.grading, shape ? '' : iv.shape, iv.moisture, fine ? iv.plasticity : ''].filter(Boolean);
         if (extra.length) s += ', ' + extra.join(', ');
       }
     } else {
