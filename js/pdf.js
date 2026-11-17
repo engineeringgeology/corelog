@@ -14,8 +14,10 @@ window.CL = window.CL || {};
     const std = bh.standard;
     const W = 210, ML = 10, MR = 200;
     const Y0 = 55, Y1 = 255;                    // body top/bottom
-    const mm = u.d === 'ft' ? 5 : 20;           // mm per depth unit: 1:50 metric = 10 m per sheet; feet = 40 ft per sheet
-    const perPage = (Y1 - Y0) / mm;
+    // depth per sheet: metric 10 / 20 / 50 m (1:50, 1:100, 1:250); feet 40 / 80 / 200 ft
+    const perPage = M.num(opts.perSheet) || (u.d === 'ft' ? 40 : 10);
+    const mm = (Y1 - Y0) / perPage;              // mm per depth unit
+    opts.scaleLabel = u.d === 'ft' ? `1 in = ${Math.round(perPage / 7.87)} ft` : `1:${Math.round(perPage * 1000 / (Y1 - Y0))}`;
     const depth = Math.max(M.maxDepth(bh), 1);
     const pages = Math.max(1, Math.ceil(depth / perPage - 1e-9));
     const ivs = M.sortBy(bh.intervals, 'from');
@@ -49,7 +51,8 @@ window.CL = window.CL || {};
       doc.setFont('helvetica', 'normal');
 
       // depth scale
-      const step = u.d === 'ft' ? 1 : 0.5, major = u.d === 'ft' ? 5 : 1;
+      const SC = { 10: [0.5, 1], 20: [1, 2], 50: [1, 5], 40: [1, 5], 80: [2, 10], 200: [5, 25] }[perPage] || [perPage / 20, perPage / 10];
+      const step = SC[0], major = SC[1];
       for (let d = Math.ceil(dTop / step) * step; d <= dBot + 1e-6; d += step) {
         const y = yOf(d, pg); const isMaj = Math.abs(d / major - Math.round(d / major)) < 1e-6;
         doc.setLineWidth(0.15); doc.line(C.depth.x + C.depth.w - (isMaj ? 2.5 : 1.2), y, C.depth.x + C.depth.w, y);
@@ -57,36 +60,53 @@ window.CL = window.CL || {};
         if (isMaj && !nearB && y > Y0 + 1 && y < Y1 - 1) { doc.setFontSize(6.5); doc.text(String(+d.toFixed(2)), C.depth.x + C.depth.w - 3, y + 1, { align: 'right' }); }
       }
 
-      // strata
+      // strata. Boundaries are drawn exactly in the depth/legend columns; in the description column each
+      // text block gets its own separator, and a leader line joins it when thin layers push text down.
+      let lastLabelY = Y0 - 0.2, nextFreeY = Y0, lastEnd = null;
+      const RX = C.leg.x + C.leg.w, DX = C.desc.x, DW = C.desc.w;
       ivs.forEach(iv => {
         const a = M.num(iv.from), b = M.num(iv.to); if (a === null || b === null || b <= a) return;
         if (b <= dTop || a >= dBot) return;
         const ya = yOf(Math.max(a, dTop), pg), yb = yOf(Math.min(b, dBot), pg);
         P.draw(P.pdfPen(doc, '#333333'), M.patternOf(iv, std), C.leg.x + 0.3, ya, C.leg.w - 0.6, yb - ya, 3.2);
         doc.setDrawColor(40); doc.setLineWidth(0.25);
-        if (a >= dTop) { doc.line(C.depth.x, ya, C.desc.x + C.desc.w, ya); }
+        if (a >= dTop) doc.line(C.depth.x, ya, RX, ya);
+        iv._lbl = true;
         if (b <= dBot) {
-          doc.line(C.depth.x, yb, C.desc.x + C.desc.w, yb);
-          doc.setFontSize(6.5); doc.setFont('helvetica', 'bold');
-          doc.text(M.f2(b), C.depth.x + 1, yb - 0.8);
-          doc.text((b - a).toFixed(2), C.elev.x + 1, yb - 0.8);
-          doc.setFont('helvetica', 'normal');
+          doc.line(C.depth.x, yb, RX, yb);
+          if (yb - lastLabelY >= 2.6) {
+            doc.setFontSize(6.5); doc.setFont('helvetica', 'bold');
+            doc.text(M.f2(b), C.depth.x + 1, yb - 0.8);
+            doc.text((b - a).toFixed(2), C.elev.x + 1, yb - 0.8);
+            doc.setFont('helvetica', 'normal'); lastLabelY = yb;
+          } else iv._lbl = false;
+          lastEnd = yb;
         }
-        // description: only on the page where the layer starts (continuation note otherwise)
-        const desc = t(M.describe(iv, std));
-        const boxTop = ya + 0.6, boxH = yb - ya - 1.2, tw = C.desc.w - 3;
+        let desc = t(M.describe(iv, std));
+        if (!iv._lbl) desc = `(${M.f2(a)}-${M.f2(b)} ${u.d}) ` + desc;
+        const top = Math.max(ya, nextFreeY);
         if (a >= dTop) {
+          // separator + leader
+          doc.setDrawColor(40); doc.setLineWidth(0.25);
+          if (top - ya < 0.3) doc.line(RX, ya, DX + DW, ya);
+          else { doc.setLineWidth(0.15); doc.line(RX, ya, DX + 2, top); doc.setLineWidth(0.25); doc.line(DX + 2, top, DX + DW, top); }
+          if (top > Y1 - 2.5) { truncated.push(iv); return; }
+          const boxH = Math.max(Math.min(yb, Y1) - top - 1.0, 2.4), tw = DW - 4;
           let fs = 7, lines, lh;
           for (; fs >= 5.5; fs -= 0.5) { doc.setFontSize(fs); lines = doc.splitTextToSize(desc, tw); lh = fs * 0.36; if (lines.length * lh <= boxH) break; }
-          doc.setFontSize(Math.max(fs, 5.5)); lh = Math.max(fs, 5.5) * 0.36;
-          const maxL = Math.max(1, Math.floor(boxH / lh));
+          fs = Math.max(fs, 5.5); doc.setFontSize(fs); lh = fs * 0.36;
+          const maxL = Math.max(1, Math.min(Math.floor(boxH / lh), Math.floor((Y1 - top - 0.6) / lh)));
           if (lines.length > maxL) { lines = lines.slice(0, maxL); lines[maxL - 1] = lines[maxL - 1].replace(/\s*\S*$/, '') + ' ...[*]'; truncated.push(iv); }
-          doc.setTextColor(15); doc.text(lines, C.desc.x + 1.5, boxTop + lh * 0.8);
+          doc.setTextColor(15); doc.text(lines, DX + 2.5, top + 0.5 + lh * 0.8);
+          nextFreeY = top + 0.9 + lines.length * lh;
         } else if (yb - ya > 6) {
-          doc.setFontSize(6); doc.setTextColor(110); doc.text('(continued)', C.desc.x + 1.5, ya + 3); doc.setTextColor(15);
+          doc.setFontSize(6); doc.setTextColor(110); doc.text('(continued)', DX + 2.5, ya + 3); doc.setTextColor(15);
+          nextFreeY = ya + 4;
         }
       });
+      if (lastEnd !== null && lastEnd < Y1 - 0.2) { const yy = Math.max(lastEnd, nextFreeY); doc.setDrawColor(40); doc.setLineWidth(0.25); if (yy - lastEnd < 0.3) doc.line(RX, lastEnd, DX + DW, lastEnd); else { doc.setLineWidth(0.15); doc.line(RX, lastEnd, DX + 2, yy); doc.setLineWidth(0.25); doc.line(DX + 2, yy, DX + DW, yy); } }
 
+      const pageNextFree = nextFreeY;
       // water strikes
       const wDraw = (d, filled, label) => {
         d = M.num(d); if (d === null || d < dTop || d > dBot) return;
@@ -138,9 +158,9 @@ window.CL = window.CL || {};
       // end of borehole
       const fd = M.maxDepth(bh);
       if (fd > dTop && fd <= dBot) {
-        const y = yOf(fd, pg);
+        const y = yOf(fd, pg), nextEnd = pageNextFree;
         doc.setFontSize(7); doc.setFont('helvetica', 'bold');
-        doc.text(t(`End of borehole at ${M.f2(fd)} ${u.d}`), C.desc.x + 1.5, y + 4); doc.setFont('helvetica', 'normal');
+        doc.text(t(`End of borehole at ${M.f2(fd)} ${u.d}`), C.desc.x + 2.5, Math.min(Math.max(y, nextEnd) + 4, Y1 - 1)); doc.setFont('helvetica', 'normal');
       }
       footer(doc, bh, used, opts, pg === pages - 1);
     }
@@ -166,7 +186,7 @@ window.CL = window.CL || {};
       ['Location', bh.location], ['Coordinates', coord], ['Ground level', bh.elev != null && bh.elev !== '' ? `${bh.elev} ${u.d}` : ''],
       ['Method', bh.method], ['Core / hole dia.', bh.diameter], ['Inclination', bh.inclination ? bh.inclination + ' deg' : ''],
       ['Rig', bh.rig], ['Contractor / driller', [bh.contractor, bh.driller].filter(Boolean).join(' / ')], ['Logged by', bh.geologist],
-      ['Date started', bh.dateStart], ['Date completed', bh.dateEnd], ['Standard', D.standards[bh.standard]],
+      ['Date started', bh.dateStart], ['Date completed', bh.dateEnd], ['Standard', D.standards[bh.standard] + (opts.scaleLabel ? '  ·  Scale ' + opts.scaleLabel : '')],
       ['Final depth', `${M.f2(M.maxDepth(bh))} ${u.d}`], ['Water first struck', bh.gwFirst != null && bh.gwFirst !== '' ? `${M.f2(bh.gwFirst)} ${u.d}` : 'not recorded'], ['Water standing', bh.gwStanding != null && bh.gwStanding !== '' ? `${M.f2(bh.gwStanding)} ${u.d}` : 'not recorded']
     ];
     const cw = 190 / 3; doc.setDrawColor(170); doc.setLineWidth(0.15);
