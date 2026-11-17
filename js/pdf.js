@@ -127,24 +127,47 @@ window.CL = window.CL || {};
       };
       wDraw(bh.gwFirst, true, M.f2(bh.gwFirst)); wDraw(bh.gwStanding, false, M.f2(bh.gwStanding));
 
-      // samples
+      // samples + tests: labels are stacked so they never overlap (leader tick when moved)
+      const stack = (items, yMin, yMax) => {
+        items.sort((a, b) => a.want - b.want);
+        let end = yMin;
+        items.forEach(it => { it.y = Math.max(it.want, end); end = it.y + it.h + 0.5; });
+        let over = end - yMax;
+        for (let i = items.length - 1; i >= 0 && over > 0; i--) {
+          const lim = i ? items[i - 1].y + items[i - 1].h : yMin;
+          const mv = Math.min(over, items[i].y - Math.max(lim, items[i].want - 40));
+          if (mv > 0) { for (let j = i; j < items.length; j++) items[j].y -= mv; over -= mv; }
+        }
+        return items;
+      };
+      const colTop = yOf(dTop, pg), colBot = yOf(dBot, pg);
+      const lead = (x, it) => { if (Math.abs(it.y - it.want) > 0.4) { doc.setDrawColor(150); doc.setLineWidth(0.1); doc.line(x, it.want, x + 0.8, it.y + 0.3); doc.setDrawColor(40); } };
+      const sLab = [], tLab = [];
       samples.forEach(s => {
         const a = M.num(s.top), b = M.num(s.bottom) ?? a; if (a === null || a > dBot || b < dTop) return;
         const ya = yOf(Math.max(a, dTop), pg), yb = yOf(Math.min(b, dBot), pg);
         doc.setFillColor(60); doc.rect(C.smp.x + 1, ya, 1.6, Math.max(0.6, yb - ya), 'F');
-        doc.setFontSize(5.8); doc.text(t(`${s.type || ''}${s.ref ? ' ' + s.ref : ''}`), C.smp.x + 3.4, ya + 2);
-        doc.setFontSize(5); doc.setTextColor(90); doc.text(`${M.f2(a)}${b !== a ? '-' + M.f2(b) : ''}`, C.smp.x + 3.4, ya + 4.2); doc.setTextColor(15);
+        sLab.push({ want: ya, h: 4.6, s, a, b });
         const n = M.sptN(s);
-        if (n !== null || s.blows) {
-          doc.setFontSize(6.5); doc.setFont('helvetica', 'bold'); doc.text(`N=${n ?? '?'}`, C.spt.x + 1, ya + 2.2); doc.setFont('helvetica', 'normal');
-          if (s.blows) { doc.setFontSize(4.6); doc.setTextColor(90); doc.text(t(String(s.blows)).slice(0, 18), C.spt.x + 1, ya + 4.3); doc.setTextColor(15); }
-        }
+        if (n !== null || s.blows) tLab.push({ want: ya, h: s.blows ? 4.8 : 2.8, spt: s, n });
       });
-      // field tests
       tests.forEach(ts => {
         const d = M.num(ts.depth); if (d === null || d < dTop || d > dBot) return;
-        const y = yOf(d, pg);
-        doc.setFontSize(5.6); doc.setTextColor(120, 40, 20); doc.text(t(`${ts.type} ${ts.value ?? ''}`).slice(0, 14), C.spt.x + 1, y + 1); doc.setTextColor(15);
+        tLab.push({ want: yOf(d, pg) - 1, h: 2.6, ts });
+      });
+      stack(sLab, colTop, colBot).forEach(it => {
+        const { s, a, b } = it; lead(C.smp.x + 2.6, it);
+        doc.setFontSize(5.8); doc.text(t(`${s.type || ''}${s.ref ? ' ' + s.ref : ''}`), C.smp.x + 3.4, it.y + 2);
+        doc.setFontSize(5); doc.setTextColor(90); doc.text(`${M.f2(a)}${b !== a ? '-' + M.f2(b) : ''}`, C.smp.x + 3.4, it.y + 4.2); doc.setTextColor(15);
+      });
+      stack(tLab, colTop, colBot).forEach(it => {
+        lead(C.spt.x + 0.1, it);
+        if (it.spt) {
+          doc.setFontSize(6.5); doc.setFont('helvetica', 'bold'); doc.text(`N=${it.n ?? '?'}`, C.spt.x + 1, it.y + 2.2); doc.setFont('helvetica', 'normal');
+          if (it.spt.blows) { doc.setFontSize(4.6); doc.setTextColor(90); doc.text(t(String(it.spt.blows)).slice(0, 18), C.spt.x + 1, it.y + 4.3); doc.setTextColor(15); }
+        } else {
+          doc.setFontSize(5.6); doc.setTextColor(120, 40, 20); doc.text(t(`${it.ts.type} ${it.ts.value ?? ''}`).slice(0, 14), C.spt.x + 1, it.y + 2); doc.setTextColor(15);
+        }
       });
 
       // core runs
