@@ -41,8 +41,9 @@ CL.DATA = {
     ISO: ['very soft', 'soft', 'firm', 'stiff', 'very stiff']
   },
   consistencyHint: {
-    'very soft': 'Su < 10 kPa · finger easily pushed in >25 mm', 'soft': 'Su 10–20 kPa', 'firm': 'Su 20–40 kPa (BS: 40–75)',
-    'stiff': 'Su 40–75 kPa (BS: 75–150)', 'very stiff': 'Su 75–150 kPa (BS: 150–300)', 'hard': 'Su > 150 kPa'
+    'very soft': 'finger easily pushed in up to 25 mm; exudes between fingers', 'soft': 'finger pushed in up to 10 mm; moulded by light finger pressure',
+    'firm': 'thumb makes impression easily; cannot be moulded by fingers', 'stiff': 'can be indented slightly by thumb; crumbles in rolling',
+    'very stiff': 'can be indented by thumbnail; cannot be moulded', 'hard': 'thumbnail indents with difficulty (ASTM D2488)'
   },
   density: ['very loose', 'loose', 'medium dense', 'dense', 'very dense'],
   densityHint: { 'very loose': 'SPT N60 0–4', 'loose': 'N60 4–10', 'medium dense': 'N60 10–30', 'dense': 'N60 30–50', 'very dense': 'N60 > 50' },
@@ -86,9 +87,9 @@ CL.DATA = {
     ['strong (R4)', '50–100 MPa'], ['very strong (R5)', '100–250 MPa'], ['extremely strong (R6)', '> 250 MPa']
   ],
   weathering: [
-    ['fresh', 'Grade I (W0/W1) · no visible sign of weathering'], ['slightly weathered', 'Grade II · discolouration on discontinuities'],
-    ['moderately weathered', 'Grade III · < half decomposed to soil'], ['highly weathered', 'Grade IV · > half decomposed to soil'],
-    ['completely weathered', 'Grade V · all decomposed, structure intact'], ['residual soil', 'Grade VI · structure destroyed']
+    ['fresh', 'Grade I (ISO 0) · no visible sign of weathering'], ['slightly weathered', 'Grade II (ISO 1) · discolouration on discontinuities'],
+    ['moderately weathered', 'Grade III (ISO 2) · less than half decomposed to soil'], ['highly weathered', 'Grade IV (ISO 3) · more than half decomposed to soil'],
+    ['completely weathered', 'Grade V (ISO 4) · all decomposed, original structure intact'], ['residual soil', 'Grade VI (ISO 5) · structure and fabric destroyed']
   ],
   grainSize: ['', 'very fine-grained', 'fine-grained', 'medium-grained', 'coarse-grained', 'very coarse-grained'],
   rockStructure: ['', 'massive', 'thickly bedded', 'medium bedded', 'thinly bedded', 'very thinly bedded', 'laminated', 'cross-bedded', 'foliated', 'schistose', 'banded', 'vesicular', 'brecciated', 'karstified', 'porous', 'veined'],
