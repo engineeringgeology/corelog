@@ -5,7 +5,7 @@ window.CL = window.CL || {};
 
 (function () {
   // Filled in when the licence server is deployed (see server/README.md)
-  const LICENSE_API = '';
+  const LICENSE_API = 'https://corelog-license.geologyfans.workers.dev';
   const PUBLIC_JWK = { kty: 'EC', crv: 'P-256', x: 'U30rOp6dBy40NovXfSu0JbC4OKHH1VdhvdOHSf3SlWs', y: 'UukT2dyJGsJWK-EM6Oigx-czC3mJbB7jUwJFPPBohss' };
   const DEMO_LIMIT = 2;
 
