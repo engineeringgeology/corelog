@@ -98,8 +98,8 @@ CL.DATA = {
   // Discontinuities
   discType: ['joint', 'bedding', 'foliation', 'cleavage', 'fault', 'shear', 'vein', 'fracture (drilling-induced)', 'crushed zone'],
   spacing: [
-    ['extremely wide', '> 2000 mm'], ['very wide', '600–2000 mm'], ['wide', '200–600 mm'], ['medium', '60–200 mm'],
-    ['close', '20–60 mm'], ['very close', '6–20 mm'], ['extremely close', '< 6 mm']
+    ['extremely wide', '> 6000 mm'], ['very wide', '2000–6000 mm'], ['wide', '600–2000 mm'], ['medium', '200–600 mm'],
+    ['close', '60–200 mm'], ['very close', '20–60 mm'], ['extremely close', '< 20 mm']
   ],
   roughness: ['', 'rough stepped', 'smooth stepped', 'slickensided stepped', 'rough undulating', 'smooth undulating',
     'slickensided undulating', 'rough planar', 'smooth planar', 'slickensided planar'],
