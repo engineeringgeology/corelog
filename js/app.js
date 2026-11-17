@@ -66,12 +66,12 @@
   }
 
   // ---------- bottom sheet editor ----------
-  function sheet({ title, fields, obj, preview, onSave, onDelete, saveLabel, extra }) {
+  function sheet({ title, fields, obj, preview, onSave, onDelete, saveLabel, extra, onNext, nextLabel }) {
     const work = JSON.parse(JSON.stringify(obj));
     const ov = document.createElement('div'); ov.className = 'overlay';
     ov.innerHTML = `<div class="sheet" role="dialog" aria-label="${esc(title)}">
       <div class="sh-head"><button class="ghost" data-a="x" aria-label="Close">✕</button><h3>${esc(title)}</h3><button class="primary sm" data-a="ok">${esc(saveLabel || 'Save')}</button></div>
-      <div class="sh-body"><div class="pv"></div><div class="form"></div>${onDelete ? '<button class="danger wide" data-a="del">Delete</button>' : ''}</div></div>`;
+      <div class="sh-body"><div class="pv"></div><div class="form"></div>${onNext ? `<button class="btn wide" data-a="next">${esc(nextLabel || 'Save and add next')}</button>` : ''}${onDelete ? '<button class="danger wide" data-a="del">Delete</button>' : ''}</div></div>`;
     document.body.appendChild(ov);
     const form = $('.form', ov), pv = $('.pv', ov);
     const render = () => { form.innerHTML = fields.map(f => fieldHTML(f, work)).join(''); upd(); };
@@ -79,12 +79,16 @@
     bindForm(form, fields, work, (k, rr, type) => { if (rr && type === 'change') render(); else upd(); });
     if (extra) extra(ov, work, render);
     render();
-    const close = () => { ov.classList.add('out'); setTimeout(() => ov.remove(), 180); history.state && history.state.sheet && history.back(); };
+    const close = () => new Promise(res => {
+      ov.classList.add('out'); setTimeout(() => ov.remove(), 180);
+      if (history.state && history.state.sheet) { const once = () => { window.removeEventListener('popstate', once); res(); }; window.addEventListener('popstate', once); history.back(); } else res();
+    });
     history.pushState({ sheet: 1 }, ''); const pop = () => { window.removeEventListener('popstate', pop); ov.remove(); }; window.addEventListener('popstate', pop);
     ov.addEventListener('click', async e => {
-      const a = e.target.closest('[data-a]'); if (!a) { if (e.target === ov) close(); return; }
+      const a = e.target.closest('[data-a]'); if (!a) return; // tapping outside never discards what was typed
       if (a.dataset.a === 'x') close();
       if (a.dataset.a === 'ok') { const err = await onSave(work); if (err) { toast(err); return; } close(); }
+      if (a.dataset.a === 'next') { const err = await onSave(work); if (err) { toast(err); return; } await close(); onNext(); }
       if (a.dataset.a === 'del' && confirm('Delete this entry?')) { onDelete(); close(); }
     });
     setTimeout(() => { const f = $('input,select', form); if (f && !('ontouchstart' in window)) f.focus(); }, 200);
@@ -166,7 +170,7 @@
       { k: 'gwNote', l: 'Water notes', full: true, ph: 'e.g. rose to 2.10 m after 20 min' },
       { k: 'remarks', l: 'Remarks', t: 'area', full: true }
     ];
-    const pane = $('#pane');
+    const old = $('#pane'); const pane = old.cloneNode(false); old.replaceWith(pane);
     const render = () => {
       pane.innerHTML = `<div class="form">${fields.map(f => fieldHTML(f, bh)).join('')}</div>
         <section class="block"><div class="bhead"><h4>Piezometer / standpipe</h4><button class="btn sm" id="pzBtn">${bh.piezo.installed ? 'Edit' : '+ Add'}</button></div>
@@ -228,7 +232,7 @@
       <div class="std">${esc(D.standards[std])} · tap a layer to edit</div>
       <div class="strata">${iv.map(i => `<div class="stratum" data-id="${i.id}" style="--h:${Math.max(56, Math.min(170, (M.num(i.to) - M.num(i.from)) * (bh.units === 'ft' ? 14 : 44)))}px">
         <canvas class="pat" data-pat="${M.patternOf(i, std)}"></canvas>
-        <div class="dep"><b>${M.f2(i.from)}</b><b>${M.f2(i.to)}</b></div>
+        <div class="dep"><b>${M.f2(i.from)}</b><small>${M.f2(M.num(i.to) - M.num(i.from))} ${ud()}</small><b>${M.f2(i.to)}</b></div>
         <div class="dsc">${esc(M.describe(i, std))}</div></div>`).join('') || `<div class="empty sm"><p>No layers yet. Tap <b>+ Layer</b> and start from the top.</p></div>`}</div>
       <button class="fab" id="addIv">${ico('plus')} Layer</button>`;
     $$('canvas.pat').forEach(c => patCanvas(c));
@@ -295,6 +299,7 @@
         const i = bh.intervals.findIndex(x => x.id === w.id); i >= 0 ? bh.intervals[i] = w : bh.intervals.push(w);
         saveBh(true); tabLog();
       },
+      onNext: isNew ? () => editInterval(null) : null,
       onDelete: isNew ? null : () => { bh.intervals = bh.intervals.filter(x => x.id !== iv.id); saveBh(true); tabLog(); }
     });
   }
@@ -323,7 +328,8 @@
       { k: 'rqdLen', l: `Pieces ≥${u.rqdMin} ${u.piece} total (${u.d})`, t: 'num', hint: 'optional, overrides pieces' },
       { k: 'notes', l: 'Notes', full: true, ph: 'core loss, mechanical breaks, barrel…' }],
       preview: o => { const k = M.runCalc(o, bh); const f = v => v == null ? '–' : v.toFixed(0) + ' %'; return `<div class="calc"><div><small>TCR</small><b>${f(k.tcr)}</b></div><div><small>SCR</small><b>${f(k.scr)}</b></div><div><small>RQD</small><b>${f(k.rqd)}</b></div><div><small>FI ${u.fi}</small><b>${k.fi == null ? '–' : k.fi.toFixed(1)}</b></div></div><p class="muted">${k.nPieces} pieces · run ${M.f2(k.len)} ${u.d}</p>`; },
-      onSave: w => { if (w.from == null || w.to == null || w.to <= w.from) return 'Check From / To'; if (w.recovered != null && w.recovered > (w.to - w.from) + 1e-6) return 'Recovered core is longer than the run'; const i = bh.runs.findIndex(x => x.id === w.id); i >= 0 ? bh.runs[i] = w : bh.runs.push(w); saveBh(true); tabRuns(); },
+      onSave: w => { if (w.from == null || w.to == null || w.to <= w.from) return 'Check From / To'; if (w.recovered != null && w.recovered > (w.to - w.from) + 1e-6) return 'Recovered core is longer than the run'; { const k = M.runCalc(w, bh); if (w.recovered != null && k.scr != null && k.scr > k.tcr + 0.5) return 'Solid core pieces add up to more than the recovered core — check the lengths'; } const i = bh.runs.findIndex(x => x.id === w.id); i >= 0 ? bh.runs[i] = w : bh.runs.push(w); saveBh(true); tabRuns(); },
+      onNext: isNew ? () => editRun(null) : null,
       onDelete: isNew ? null : () => { bh.runs = bh.runs.filter(x => x.id !== r.id); saveBh(true); tabRuns(); } });
   }
 
@@ -346,6 +352,7 @@
       { k: 'roughness', l: 'Roughness', t: 'sel', o: D.roughness }, { k: 'aperture', l: 'Aperture', t: 'sel', o: D.aperture },
       { k: 'infill', l: 'Infill / coating', t: 'sel', o: D.infill }, { k: 'notes', l: 'Notes', ph: 'persistence, JRC, slickensides…' }],
       onSave: w => { if (w.depth == null) return 'Enter the depth'; const i = bh.discs.findIndex(x => x.id === w.id); i >= 0 ? bh.discs[i] = w : bh.discs.push(w); saveBh(true); tabDisc(); },
+      onNext: isNew ? () => editDisc(null) : null,
       onDelete: isNew ? null : () => { bh.discs = bh.discs.filter(x => x.id !== d.id); saveBh(true); tabDisc(); } });
   }
 
@@ -372,6 +379,7 @@
       { k: 'notes', l: 'Notes', full: true, ph: 'recovery, SPT(C), refusal 50/25 mm…' }],
       preview: o => { const n = M.sptN(o); return n != null ? `<div class="calc one"><div><small>SPT N</small><b>${n}</b></div></div>` : ''; },
       onSave: w => { if (w.top == null) return 'Enter the top depth'; const i = bh.samples.findIndex(x => x.id === w.id); i >= 0 ? bh.samples[i] = w : bh.samples.push(w); saveBh(true); tabSamples(); },
+      onNext: isNew ? () => editSample(null) : null,
       onDelete: isNew ? null : () => { bh.samples = bh.samples.filter(x => x.id !== s.id); saveBh(true); tabSamples(); } });
   }
   function editTest(x) {
@@ -441,6 +449,8 @@
     const bk = bh.lastBackup ? new Date(bh.lastBackup).toLocaleString() : 'never';
     $('#pane').innerHTML = `
       <section class="block"><h4>${ico('pdf')} Borehole log (PDF)</h4><p class="muted">A4 log with graphic column, legend, TCR/SCR/RQD, samples, SPT, water, and data tables.${lic.licensed ? '' : ' <b>Demo: watermark.</b>'}</p>
+        <div class="fld"><label for="perSheet">Depth per sheet</label><select id="perSheet">${(bh.units === 'ft' ? [[40, '40 ft per sheet (1 in = 5 ft)'], [80, '80 ft per sheet (1 in = 10 ft)'], [200, '200 ft per sheet (1 in = 25 ft)']] : [[10, '10 m per sheet (1:50)'], [20, '20 m per sheet (1:100)'], [50, '50 m per sheet (1:250)']]).map(o => `<option value="${o[0]}"${+bh.pdfPerSheet === o[0] ? ' selected' : ''}>${o[1]}</option>`).join('')}</select></div>
+        <p class="muted" id="sheetsInfo"></p>
         <label class="chk"><input type="checkbox" id="incPh" checked> Include core photos</label>
         <div class="row2"><button class="primary" id="pdfOpen">Preview</button><button class="btn" id="pdfShare">${ico('share')} Save / share</button></div></section>
       <section class="block"><h4>${ico('xls')} Excel &amp; CSV</h4><p class="muted">All data in sheets: header, strata, core runs, discontinuities, samples, tests, installation, water levels.</p>
@@ -451,13 +461,15 @@
       toast('Building PDF…', 10000);
       try {
         const photos = $('#incPh').checked ? await DB.photosFor(bh.id) : [];
-        const doc = await CL.PDF.build(bh, { photos, licensee: lic.licensed ? lic.name : '', demo: !lic.licensed });
+        const doc = await CL.PDF.build(bh, { photos, perSheet: +$('#perSheet').value, licensee: lic.licensed ? lic.name : '', demo: !lic.licensed });
         const blob = doc.output('blob'); const name = `${CL.Export.safe(bh.bhId)}_log.pdf`;
         toast('PDF ready');
         if (share) await CL.Export.save(blob, name, true);
         else { const u = URL.createObjectURL(blob); const w = (window.claude ? null : window.open(u, '_blank')); if (!w) CL.Export.save(blob, name, false); }
       } catch (e) { console.error(e); toast('PDF failed: ' + e.message, 5000); }
     };
+    const si = () => { const n = Math.max(1, Math.ceil(M.maxDepth(bh) / +$('#perSheet').value - 1e-9)); $('#sheetsInfo').textContent = `${M.f2(M.maxDepth(bh))} ${ud()} → ${n} log sheet${n > 1 ? 's' : ''} + data tables`; };
+    $('#perSheet').onchange = () => { bh.pdfPerSheet = +$('#perSheet').value; saveBh(); si(); }; si();
     $('#pdfOpen').onclick = () => pdf(false); $('#pdfShare').onclick = () => pdf(true);
     $('#xls').onclick = () => CL.Export.save(CL.Export.xlsxBlob([bh]), `${CL.Export.safe(bh.bhId)}.xlsx`, true);
     $('#csv').onclick = () => CL.Export.save(CL.Export.csvBlob(bh), `${CL.Export.safe(bh.bhId)}.csv`, true);
@@ -524,7 +536,7 @@
   }
 
   // ---------- boot ----------
-  CL.VERSION = '1.0.5';
+  CL.VERSION = '1.0.6';
   async function boot() {
     try {
       S.settings = (await DB.meta('settings')) || { standard: 'BS', units: 'm', method: D.methods[0], geologist: '' };
