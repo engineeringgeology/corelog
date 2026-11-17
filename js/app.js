@@ -318,7 +318,7 @@
       { k: 'from', l: `From (${u.d})`, t: 'num' }, { k: 'to', l: `To (${u.d})`, t: 'num' },
       { k: 'recovered', l: `Total core recovered (${u.d})`, t: 'num', full: true, hint: 'all core incl. broken' },
       { k: 'pieces', l: `Solid core piece lengths (${u.piece})`, full: true, ph: 'e.g. 12 8 25 31 4 17', hint: 'full-diameter pieces, separated by spaces' },
-      { k: 'fractures', l: 'Natural fractures (count)', t: 'num', hint: 'blank = pieces − 1' },
+      { k: 'fractures', l: 'Natural fractures (count)', t: 'num', hint: 'exclude drilling breaks; blank = pieces − 1' },
       { k: 'solid', l: `Solid core total (${u.d})`, t: 'num', hint: 'optional, overrides pieces' },
       { k: 'rqdLen', l: `Pieces ≥${u.rqdMin} ${u.piece} total (${u.d})`, t: 'num', hint: 'optional, overrides pieces' },
       { k: 'notes', l: 'Notes', full: true, ph: 'core loss, mechanical breaks, barrel…' }],
@@ -524,7 +524,7 @@
   }
 
   // ---------- boot ----------
-  CL.VERSION = '1.0.0';
+  CL.VERSION = '1.0.1';
   async function boot() {
     try {
       S.settings = (await DB.meta('settings')) || { standard: 'BS', units: 'm', method: D.methods[0], geologist: '' };
